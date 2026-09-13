@@ -11,9 +11,11 @@ import type {
   TravelerType,
 } from "@/lib/types";
 import type { Extraction } from "@/lib/ai/intent";
-import { encodeRequest } from "@/lib/clientState";
+import { encodeMeta, encodeRequest, type FieldConfidence, type RequestMeta } from "@/lib/clientState";
 import { fmtDuration, fmtTime } from "@/lib/engine/time";
 import { CATEGORY_LABEL } from "@/components/Bits";
+import { useAuth } from "@/lib/auth";
+import { applyProfileDefaults, FIELD_LABELS } from "@/lib/profile";
 
 const EXAMPLES = [
   "I'm in Manali with my parents. We have 2 hours before dinner, budget ₹800 each. Something cultural and relaxing, and not much walking.",
@@ -72,6 +74,8 @@ export default function DiscoverPage() {
   const [extraction, setExtraction] = useState<Extraction | null>(null);
   const [engine, setEngine] = useState<"rules" | "claude">("rules");
   const [reading, setReading] = useState(false);
+  const { user } = useAuth();
+  const [applied, setApplied] = useState<string[]>([]);
 
   const set = <K extends keyof TravelerRequest>(k: K, v: TravelerRequest[K]) =>
     setReq((r) => (r ? { ...r, [k]: v } : r));
@@ -85,19 +89,42 @@ export default function DiscoverPage() {
     });
     const data = await res.json();
     setExtraction(data.extraction);
-    setReq(data.request);
     setEngine(data.engine);
+
+    // Saved preferences fill only the gaps the sentence left; anything the
+    // traveler actually said stays untouched.
+    const merged = applyProfileDefaults(
+      data.request,
+      data.extraction,
+      user?.preferences ?? null,
+      user?.settings.privacy.personalizedRecommendations ?? false
+    );
+    setReq(merged.request);
+    setApplied(merged.applied);
     setReading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    void read(EXAMPLES[0]);
+    void read(text);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.id]);
 
   const go = () => {
     if (!req) return;
-    router.push(`/results?q=${encodeRequest(req)}`);
+    // hand the results screen what the extractor actually knew, so it can show
+    // stated vs inferred vs default honestly instead of inventing confidence
+    const conf: RequestMeta["conf"] = {};
+    const evidence: RequestMeta["evidence"] = {};
+    if (extraction) {
+      (Object.keys(extraction) as (keyof typeof extraction)[]).forEach((k) => {
+        const f = extraction[k];
+        if (!f) return;
+        conf[k as string] = f.confidence as FieldConfidence;
+        if (f.evidence) evidence[k as string] = f.evidence;
+      });
+    }
+    const meta: RequestMeta = { conf, evidence, fromProfile: applied, rawText: text };
+    router.push(`/results?q=${encodeRequest(req)}&m=${encodeMeta(meta)}`);
   };
 
   const evidence = (k: keyof Extraction) => extraction?.[k];
@@ -154,6 +181,12 @@ export default function DiscoverPage() {
             <span className="chip chip-brand">
               {engine === "claude" ? "Claude + rules" : "Rule-based extraction"}
             </span>
+            {applied.length > 0 && (
+              <span className="chip chip-good" title={`From your saved profile: ${applied.map((a) => FIELD_LABELS[a] ?? a).join(", ")}`}>
+                + your saved {applied.slice(0, 2).map((a) => FIELD_LABELS[a] ?? a).join(" & ")}
+                {applied.length > 2 ? ` +${applied.length - 2}` : ""}
+              </span>
+            )}
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -329,16 +362,10 @@ export default function DiscoverPage() {
                   <button
                     key={p.v}
                     onClick={() => set("preference", p.v)}
-                    className={`rounded-xl border p-3 text-left transition ${
-                      req.preference === p.v
-                        ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)]"
-                        : "border-[var(--color-line)] bg-white hover:border-[#cfc4b6]"
-                    }`}
+                    className={`acc-pref ${req.preference === p.v ? "is-on" : ""}`}
                   >
-                    <span className="block text-sm font-semibold">{p.l}</span>
-                    <span className="mt-1 block text-xs leading-snug text-[var(--color-ink-soft)]">
-                      {p.d}
-                    </span>
+                    <span className="acc-pref-label">{p.l}</span>
+                    <span className="acc-pref-hint">{p.d}</span>
                   </button>
                 ))}
               </div>

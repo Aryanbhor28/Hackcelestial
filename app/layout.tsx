@@ -3,6 +3,10 @@ import { Caveat, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import { Logo, Nav } from "@/components/Nav";
+import { AuthProvider } from "@/lib/auth";
+import { LaunchIntro } from "@/components/LaunchIntro";
+import { ToastProvider } from "@/components/Toast";
+import { THEME_GUARD, ThemeSync } from "@/components/ThemeSync";
 
 const sans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -47,10 +51,19 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${hand.variable}`}>
+    // the intro guard stamps data-intro on <html> before hydration, by design
+    <html lang="en" className={`${sans.variable} ${hand.variable}`} suppressHydrationWarning>
+      <head>
+        {/* runs before first paint so a dark-theme account never flashes light */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_GUARD }} />
+      </head>
       <body style={{ ["--font-hand" as string]: `var(--font-hand-loaded), "Segoe Script", cursive` }}>
-        <Nav />
-        <main>{children}</main>
+        <AuthProvider>
+          <ToastProvider>
+            <ThemeSync />
+            <LaunchIntro />
+            <Nav />
+            <main>{children}</main>
 
         <footer className="mt-24 bg-[var(--color-deep)] text-white">
           <div className="mx-auto max-w-[1500px] px-5 py-14 lg:px-8">
@@ -90,7 +103,9 @@ export default function RootLayout({
               </p>
             </div>
           </div>
-        </footer>
+            </footer>
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

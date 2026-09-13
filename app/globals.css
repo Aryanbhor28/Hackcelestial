@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@import "./auth.css";
+@import "./account.css";
+@import "./results.css";
+@import "./replan.css";
+@import "./adapt.css";
 
 @theme {
   /* LocalFlow palette — deep teal ground, warm amber accent */
@@ -216,6 +221,9 @@ input[type="range"]::-webkit-slider-thumb {
 /* the curved white edge that lifts the next section over the hero */
 .curve-top {
   position: relative;
+  /* the ::before curve reaches 5% past each edge; clip x so it cannot widen the
+     page on narrow screens, while leaving y visible so the curve still lifts */
+  overflow-x: clip;
 }
 .curve-top::before {
   content: "";

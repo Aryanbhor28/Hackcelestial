@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Experience } from "@/lib/types";
 import { fmtTime, todayIso } from "@/lib/engine/time";
+import { useAuth } from "@/lib/auth";
+import { recallMatchFor, type MatchContext } from "@/lib/replan";
 
 export function BookingBox({
   exp,
@@ -13,9 +15,21 @@ export function BookingBox({
   /** startable times today, minutes from midnight */
   slots: number[];
 }) {
+  const { user } = useAuth();
   const [guests, setGuests] = useState(2);
+  // a booking made from a matched set keeps the traveler's situation, so a
+  // provider cancellation can later be replanned without starting over
+  const [match, setMatch] = useState<MatchContext | null>(null);
+  useEffect(() => {
+    const m = recallMatchFor(exp.experienceId);
+    setMatch(m);
+    if (m) setGuests(Math.min(exp.capacity, Math.max(1, m.request.groupSize)));
+  }, [exp.experienceId, exp.capacity]);
   const [startMin, setStartMin] = useState(slots[0] ?? 10 * 60);
   const [name, setName] = useState("");
+  useEffect(() => {
+    if (user?.name) setName((n) => n || user.name);
+  }, [user?.name]);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [ref, setRef] = useState<string | null>(null);
 
@@ -30,6 +44,9 @@ export function BookingBox({
         startMin,
         date: todayIso(),
         travelerName: name,
+        userId: user?.id,
+        request: match?.request,
+        replacesBookingId: match?.replacesBookingId,
       }),
     });
     if (!res.ok) return setState("error");
@@ -49,9 +66,17 @@ export function BookingBox({
           {exp.price * guests} total. The provider sees this on their dashboard now and accepts
           or declines. Reference {ref}.
         </p>
+        {match?.replacesBookingId && (
+          <p className="mt-2 text-sm font-semibold text-[var(--color-teal)]">
+            This request replaces your cancelled booking — My Trips now shows your adapted plan.
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-3">
           <Link href="/provider" className="btn btn-primary btn-sm">
             See it land on the provider dashboard →
+          </Link>
+          <Link href="/trips" className="btn btn-ghost btn-sm">
+            View My Trips
           </Link>
           <button className="btn btn-ghost btn-sm" onClick={() => setState("idle")}>
             Book another time

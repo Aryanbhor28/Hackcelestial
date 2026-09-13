@@ -1,4 +1,5 @@
 import type { Booking, Experience, Lead, Provider, Review } from "@/lib/types";
+import { todayIso } from "@/lib/engine/time";
 import { EXPERIENCES } from "@/lib/data/experiences";
 import { PROVIDERS } from "@/lib/data/providers";
 import { BOOKINGS, LEADS, REVIEWS } from "@/lib/data/seed";
@@ -81,10 +82,19 @@ export const updateBooking = (id: string, patch: Partial<Booking>) => {
 
 export const cancelToday = (experienceId: string) => {
   store.cancelledToday.add(experienceId);
-  // every pending/confirmed booking for it today is cancelled too
+  // only today's live bookings are affected; past, declined and already
+  // cancelled bookings keep their state. The timestamp lets the traveler's
+  // replanning work out how much of their window is left.
+  const today = todayIso();
+  const at = new Date().toISOString();
   store.bookings.forEach((b) => {
-    if (b.experienceId === experienceId && b.status !== "declined") {
+    if (
+      b.experienceId === experienceId &&
+      b.date === today &&
+      (b.status === "pending" || b.status === "confirmed")
+    ) {
       b.status = "cancelled";
+      b.cancelledAt = at;
     }
   });
 };

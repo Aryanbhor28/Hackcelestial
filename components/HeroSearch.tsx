@@ -104,7 +104,7 @@ export function HeroSearch() {
 
       {/* search row */}
       <div className="px-2.5 pb-2.5">
-        <div className="grid items-center gap-2 rounded-2xl bg-white p-2 sm:grid-cols-[1.4fr_1fr_1fr_auto]">
+        <div className="hero-search-row grid items-center gap-2 rounded-2xl bg-white p-2 sm:grid-cols-[1.4fr_1fr_1fr_auto]">
           <label className="flex items-center gap-2.5 rounded-xl px-3 py-2.5">
             <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0 text-[var(--color-muted)]" fill="none" stroke="currentColor" strokeWidth="1.7">
               <path d="M10 17.5s6-5.2 6-9.3a6 6 0 1 0-12 0c0 4.1 6 9.3 6 9.3z" />

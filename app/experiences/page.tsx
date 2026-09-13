@@ -3,6 +3,7 @@ import { getExperiences, getProvider } from "@/lib/store";
 import { fmtDuration } from "@/lib/engine/time";
 import { photoFor } from "@/lib/data/media";
 import { Art, CATEGORY_LABEL, LocalMeter, VerifiedBadge } from "@/components/Bits";
+import { SaveButton } from "@/components/SaveButton";
 import type { Category } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -69,10 +70,13 @@ export default async function ExperiencesPage({
           const photo = photoFor(e.experienceId, e.category);
           const provider = getProvider(e.providerId);
           return (
+            <div key={e.experienceId} className="card card-hover relative overflow-hidden">
+            <span className="absolute top-2.5 right-2.5 z-10">
+              <SaveButton experienceId={e.experienceId} />
+            </span>
             <Link
-              key={e.experienceId}
               href={`/experience/${e.experienceId}`}
-              className="card card-hover overflow-hidden"
+              className="block"
             >
               <div className="relative h-44">
                 {photo ? (
@@ -85,7 +89,7 @@ export default async function ExperiencesPage({
                   <span className="text-[var(--color-amber-2)]">★</span>{" "}
                   {e.rating ? e.rating.toFixed(1) : "New"}
                 </span>
-                <span className="absolute top-2.5 right-2.5 rounded-md bg-black/55 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                <span className="absolute bottom-2.5 right-2.5 rounded-md bg-black/55 px-2 py-1 text-[11px] font-semibold text-white backdrop-blur">
                   {fmtDuration(e.durationMin)}
                 </span>
               </div>
@@ -114,6 +118,7 @@ export default async function ExperiencesPage({
                 </div>
               </div>
             </Link>
+            </div>
           );
         })}
       </div>

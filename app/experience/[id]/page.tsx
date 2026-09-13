@@ -4,6 +4,7 @@ import { getExperience, getProvider, getReviewsFor, isCancelledToday } from "@/l
 import { fmtDuration, fmtTime, startOptions, todayIso } from "@/lib/engine/time";
 import { Art, CATEGORY_LABEL, LocalMeter, SOURCE_LABEL, VerifiedBadge } from "@/components/Bits";
 import { BookingBox } from "@/components/BookingBox";
+import { SaveButton } from "@/components/SaveButton";
 
 export default async function ExperiencePage({
   params,
@@ -46,7 +47,10 @@ export default async function ExperiencePage({
             {cancelled && <span className="chip chip-warn">Cancelled for today</span>}
           </div>
 
-          <h1 className="display mt-4 text-4xl leading-tight font-semibold">{exp.name}</h1>
+          <div className="mt-4 flex items-start gap-4">
+            <h1 className="display flex-1 text-4xl leading-tight font-semibold">{exp.name}</h1>
+            <SaveButton experienceId={exp.experienceId} label />
+          </div>
           <p className="mt-2 text-[var(--color-ink-soft)]">
             {provider.name} · {exp.area}, Manali
           </p>
@@ -184,7 +188,7 @@ export default async function ExperiencePage({
         </div>
 
         {/* ------------------------------------------------------- book rail */}
-        <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+        <aside id="book" className="scroll-mt-24 space-y-5 lg:sticky lg:top-24 lg:self-start">
           {cancelled ? (
             <div className="card border-[var(--color-brand)]/30 bg-[var(--color-brand-soft)] p-6">
               <p className="font-semibold text-[var(--color-brand)]">

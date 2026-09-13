@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { Booking } from "@/lib/types";
+import type { Booking, TravelerRequest } from "@/lib/types";
 import { addBooking, getBookings, getExperience } from "@/lib/store";
 import { todayIso } from "@/lib/engine/time";
 
@@ -14,6 +14,9 @@ export async function POST(req: Request) {
     startMin: number;
     date?: string;
     travelerName?: string;
+    userId?: string;
+    request?: TravelerRequest;
+    replacesBookingId?: string;
   };
 
   const exp = getExperience(body.experienceId);
@@ -21,11 +24,19 @@ export async function POST(req: Request) {
   if (body.guests > exp.capacity)
     return NextResponse.json({ error: "Over capacity" }, { status: 409 });
 
+  // only link a replacement to a booking that really was cancelled
+  const replaces = getBookings().find(
+    (b) => b.bookingId === body.replacesBookingId && b.status === "cancelled"
+  )?.bookingId;
+
   const booking: Booking = {
     bookingId: `b_${Math.random().toString(36).slice(2, 9)}`,
     experienceId: exp.experienceId,
     providerId: exp.providerId,
     travelerName: body.travelerName?.trim() || "Guest traveler",
+    userId: body.userId,
+    request: body.request,
+    replacesBookingId: replaces,
     date: body.date ?? todayIso(),
     startMin: body.startMin,
     guests: body.guests,

@@ -198,12 +198,20 @@ export interface Booking {
   experienceId: string;
   providerId: string;
   travelerName: string;
+  /** account that made the booking, when the traveler was signed in */
+  userId?: string;
   date: string;
   startMin: number;
   guests: number;
   totalPrice: number;
   status: BookingStatus;
   createdAt: string;
+  /** when the provider cancelled this session (ISO), set by the cancel-today flow */
+  cancelledAt?: string;
+  /** the traveler situation this booking was matched against, when booked from a match */
+  request?: TravelerRequest;
+  /** set when this booking replaces one the provider cancelled */
+  replacesBookingId?: string;
 }
 
 export interface Review {
