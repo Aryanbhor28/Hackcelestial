@@ -1,11 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import type { Booking, BookingStatus, Experience } from "@/lib/types";
 import { fmtDuration, fmtTime } from "@/lib/engine/time";
 import { Art, LocalMeter } from "./Bits";
+
+const noopSubscribe = () => () => {};
+
+/**
+ * Server and hydration render a timezone-independent UTC stamp so the HTML
+ * matches; after hydration the browser switches to its local format.
+ */
+function CreatedAt({ iso }: { iso: string }) {
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  return <>{hydrated ? new Date(iso).toLocaleString() : `${iso.slice(0, 16).replace("T", " ")} UTC`}</>;
+}
 
 const STATUS_CHIP: Record<BookingStatus, string> = {
   pending: "chip-warn",
@@ -66,7 +77,7 @@ export function BookingList({
             <div className="text-right">
               <p className="display text-lg font-semibold">₹{b.totalPrice}</p>
               <p className="text-[11px] text-[var(--color-muted)]">
-                {new Date(b.createdAt).toLocaleString()}
+                <CreatedAt iso={b.createdAt} />
               </p>
             </div>
           </div>
